@@ -11,6 +11,26 @@ router.get('/', async (req, res) => {
 
     // Total employees
     const totalEmployees = await dbGet('SELECT COUNT(*) as count FROM employees');
+    
+    if (!totalEmployees) {
+      return res.json({
+        summary: {
+          totalEmployees: 0,
+          totalPTOUsed: 0,
+          plannedPercentage: 0,
+          unplannedPercentage: 0,
+          maternityDays: 0,
+          paternityDays: 0,
+          year: year
+        },
+        ptoBreakdown: {},
+        monthlyTrend: [],
+        topUsers: [],
+        efficiency: [],
+        recentLeaves: [],
+        teamEfficiency: []
+      });
+    }
 
     // Total PTO days used this year (excluding maternity/paternity)
     const totalPTOUsed = await dbGet(`
@@ -168,7 +188,13 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching analytics:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics' });
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch analytics',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
