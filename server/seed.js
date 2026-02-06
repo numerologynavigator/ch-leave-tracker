@@ -1,7 +1,7 @@
 // Sample data seeding script
 // Run this to populate your database with test data
 
-import { dbRun } from './database.js';
+import { dbRun, dbGet } from './database.js';
 
 const sampleEmployees = [
   { name: 'John Doe', email: 'john.doe@company.com', total_pto_days: 20 },
@@ -19,8 +19,15 @@ const sampleLeaves = [
   { employee_name: 'David Brown', start_date: '2026-01-25', end_date: '2026-01-25', leave_type: 'Unplanned', reason: 'Emergency' }
 ];
 
-async function seedData() {
+export async function seedData() {
   try {
+    // Check if data already exists
+    const existingEmployees = await dbGet('SELECT COUNT(*) as count FROM employees', []);
+    if (existingEmployees && existingEmployees.count > 0) {
+      console.log('⏭️  Database already has data, skipping seed');
+      return;
+    }
+
     console.log('Seeding sample data...');
 
     // Insert employees
@@ -61,11 +68,13 @@ async function seedData() {
 
     console.log('\n✅ Sample data seeded successfully!');
     console.log('You can now start the server and view the dashboard.');
-    process.exit(0);
   } catch (error) {
     console.error('Error seeding data:', error);
-    process.exit(1);
+    throw error;
   }
 }
 
-seedData();
+// Only run if called directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedData().then(() => process.exit(0)).catch(() => process.exit(1));
+}

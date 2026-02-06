@@ -22,6 +22,7 @@ import employeeRoutes from './routes/employees.js';
 import leaveRoutes from './routes/leaves.js';
 import analyticsRoutes from './routes/analytics.js';
 import emailRoutes from './routes/email.js';
+import { seedData } from './seed.js';
 
 // Routes
 app.use('/api/employees', employeeRoutes);
@@ -57,7 +58,18 @@ if (process.env.NODE_ENV === 'production') {
 //   }
 // });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Auto-seed database in production if empty
+  if (process.env.NODE_ENV === 'production') {
+    setTimeout(async () => {
+      try {
+        await seedData();
+      } catch (error) {
+        console.error('Auto-seed failed:', error);
+      }
+    }, 2000); // Wait 2 seconds for DB to initialize
+  }
 });
