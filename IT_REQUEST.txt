@@ -1,0 +1,35 @@
+Subject: Request: Azure App Registration for Leave Tracker Application
+
+Hi IT Team,
+
+I'm using a Leave Tracker application that needs to read PTO request emails from Outlook. I need an Azure AD app registration created with the following specifications:
+
+**Application Details:**
+- Name: Leave Tracker Email Sync
+- Type: Single tenant (Deloitte O365D only)
+- Purpose: Read emails from my mailbox to automatically track PTO requests
+
+**Required API Permissions (Microsoft Graph - Application permissions):**
+- Mail.Read (to read emails from monitored inbox)
+- User.Read.All (to read user information)
+
+**Admin Consent:** Required
+
+**What I need from you:**
+After creating the app registration, please provide me with:
+1. Application (client) ID
+2. Directory (tenant) ID
+3. Client Secret (value, not the ID)
+4. Confirm that admin consent has been granted
+
+**Monitored Email:** anaid@deloitte.com
+
+**Security Notes:**
+- The application runs locally on my machine
+- Credentials will be stored in a local .env file (not committed to source control)
+- Only reads emails, does not send or modify anything
+- Only accesses emails with PTO-related keywords (PTO, leave, vacation)
+
+Please let me know if you need any additional information or have security concerns.
+
+Thank you!

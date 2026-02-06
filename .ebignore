@@ -1,0 +1,53 @@
+# Node modules (will be installed by EB)
+node_modules/
+client/node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Python virtual environment
+.venv/
+__pycache__/
+
+# Database (will be created fresh)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+
+# Build outputs (will be built by EB)
+client/dist/
+dist/
+build/
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+
+# Deployment configs for other platforms
+fly.toml
+railway.json
+Procfile
+start.ps1
+IT_REQUEST.txt
