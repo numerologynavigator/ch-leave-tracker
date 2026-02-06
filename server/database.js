@@ -15,10 +15,27 @@ let pool;
 
 if (usePostgres) {
   // PostgreSQL connection
-  pool = new Pool({
+  const connectionOptions = {
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-  });
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 20
+  };
+  
+  // Force IPv4 for Supabase connections
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase.co')) {
+    // Parse the connection string and modify host to use pooler
+    const url = new URL(process.env.DATABASE_URL);
+    // Use the connection pooler which works better with Render
+    if (!url.hostname.includes('pooler')) {
+      url.hostname = url.hostname.replace('db.', 'aws-0-us-east-1.pooler.');
+      url.port = '6543'; // Pooler port
+      connectionOptions.connectionString = url.toString();
+    }
+  }
+  
+  pool = new Pool(connectionOptions);
   
   pool.on('connect', () => {
     console.log('Connected to PostgreSQL database');
