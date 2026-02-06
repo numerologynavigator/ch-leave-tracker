@@ -93,8 +93,8 @@ router.get('/', async (req, res) => {
         AND strftime('%Y', l.start_date) = ?
         AND l.status = 'Approved'
       GROUP BY e.id, e.name
-      HAVING total_days > 0
-      ORDER BY total_days DESC
+      HAVING SUM(l.days_count) > 0
+      ORDER BY SUM(l.days_count) DESC
       LIMIT 10
     `, [year.toString()]);
 
