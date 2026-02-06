@@ -204,11 +204,11 @@ function convertPlaceholders(query) {
 function convertDateFunctions(query) {
   if (!usePostgres) return query;
   
-  // Convert strftime('%Y', column) to EXTRACT(YEAR FROM column)::text
-  query = query.replace(/strftime\('%Y',\s*([^)]+)\)/g, "EXTRACT(YEAR FROM $1)::text");
+  // Convert strftime('%Y', column) to EXTRACT(YEAR FROM column::date)::text
+  query = query.replace(/strftime\('%Y',\s*([^)]+)\)/g, "EXTRACT(YEAR FROM $1::date)::text");
   
-  // Convert strftime('%m', column) to LPAD(EXTRACT(MONTH FROM column)::text, 2, '0')
-  query = query.replace(/strftime\('%m',\s*([^)]+)\)/g, "LPAD(EXTRACT(MONTH FROM $1)::text, 2, '0')");
+  // Convert strftime('%m', column) to LPAD(EXTRACT(MONTH FROM column::date)::text, 2, '0')
+  query = query.replace(/strftime\('%m',\s*([^)]+)\)/g, "LPAD(EXTRACT(MONTH FROM $1::date)::text, 2, '0')");
   
   // Convert DATETIME to TIMESTAMP
   query = query.replace(/DATETIME/g, 'TIMESTAMP');
