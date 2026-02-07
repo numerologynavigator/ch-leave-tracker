@@ -82,6 +82,23 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Check for overlapping leaves for the same employee
+    const overlappingLeaves = await dbAll(`
+      SELECT id, start_date, end_date, leave_type 
+      FROM leaves 
+      WHERE employee_id = ? 
+        AND start_date <= ? 
+        AND end_date >= ?
+    `, [employee_id, end_date, start_date]);
+
+    if (overlappingLeaves && overlappingLeaves.length > 0) {
+      const existingLeave = overlappingLeaves[0];
+      return res.status(409).json({ 
+        error: 'Overlapping leave exists',
+        message: `This employee already has a ${existingLeave.leave_type} leave from ${format(parseISO(existingLeave.start_date), 'MMM dd, yyyy')} to ${format(parseISO(existingLeave.end_date), 'MMM dd, yyyy')}`
+      });
+    }
+
     // Calculate days count based on leave type
     // Maternity and Paternity leave use business days (exclude weekends)
     // Regular PTO uses calendar days
@@ -128,6 +145,32 @@ router.put('/:id', async (req, res) => {
         return res.status(400).json({ 
           error: 'Invalid date range',
           message: 'End date cannot be before start date'
+        });
+      }
+    }
+
+    // Check for overlapping leaves when updating dates
+    if (start_date && end_date) {
+      // Get current employee_id for this leave
+      const currentLeave = await dbGet('SELECT employee_id FROM leaves WHERE id = ?', [id]);
+      if (!currentLeave) {
+        return res.status(404).json({ error: 'Leave record not found' });
+      }
+
+      const overlappingLeaves = await dbAll(`
+        SELECT id, start_date, end_date, leave_type 
+        FROM leaves 
+        WHERE employee_id = ? 
+          AND id != ?
+          AND start_date <= ? 
+          AND end_date >= ?
+      `, [currentLeave.employee_id, id, end_date, start_date]);
+
+      if (overlappingLeaves && overlappingLeaves.length > 0) {
+        const existingLeave = overlappingLeaves[0];
+        return res.status(409).json({ 
+          error: 'Overlapping leave exists',
+          message: `This employee already has a ${existingLeave.leave_type} leave from ${format(parseISO(existingLeave.start_date), 'MMM dd, yyyy')} to ${format(parseISO(existingLeave.end_date), 'MMM dd, yyyy')}`
         });
       }
     }
