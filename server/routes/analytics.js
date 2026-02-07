@@ -174,25 +174,26 @@ router.get('/', async (req, res) => {
     `, [year.toString()]);
 
     // Calculate overall planned percentage based on actual PTO days
-    const totalPlannedDays = ptoBreakdown.find(p => p.leave_type === 'Planned')?.total_days || 0;
-    const totalUnplannedDays = ptoBreakdown.find(p => p.leave_type === 'Unplanned')?.total_days || 0;
+    // Convert to numbers because PostgreSQL returns numeric values as strings
+    const totalPlannedDays = Number(ptoBreakdown.find(p => p.leave_type === 'Planned')?.total_days || 0);
+    const totalUnplannedDays = Number(ptoBreakdown.find(p => p.leave_type === 'Unplanned')?.total_days || 0);
     const totalDays = totalPlannedDays + totalUnplannedDays;
     const actualPlannedPercentage = totalDays > 0 ? Math.round((totalPlannedDays / totalDays) * 100) : 0;
 
     res.json({
       summary: {
-        totalEmployees: totalEmployees.count,
-        totalPTOUsed: totalPTOUsed.total,
+        totalEmployees: Number(totalEmployees.count),
+        totalPTOUsed: Number(totalPTOUsed.total),
         plannedPercentage: actualPlannedPercentage,
         unplannedPercentage: totalDays > 0 ? 100 - actualPlannedPercentage : 0,
-        maternityDays: maternityPaternity.maternity_days,
-        paternityDays: maternityPaternity.paternity_days,
+        maternityDays: Number(maternityPaternity.maternity_days),
+        paternityDays: Number(maternityPaternity.paternity_days),
         year: year
       },
       ptoBreakdown: ptoBreakdown.reduce((acc, item) => {
         acc[item.leave_type.toLowerCase()] = {
-          count: item.count,
-          totalDays: item.total_days
+          count: Number(item.count),
+          totalDays: Number(item.total_days)
         };
         return acc;
       }, {}),
