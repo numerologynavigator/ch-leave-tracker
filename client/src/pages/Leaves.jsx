@@ -9,6 +9,7 @@ export default function Leaves() {
   const [showModal, setShowModal] = useState(false);
   const [editingLeave, setEditingLeave] = useState(null);
   const [filterType, setFilterType] = useState('all');
+  const [filterTeam, setFilterTeam] = useState('all');
   const [filterEmployee, setFilterEmployee] = useState('all');
   const [formData, setFormData] = useState({
     employee_id: '',
@@ -103,6 +104,20 @@ export default function Leaves() {
     setShowModal(true);
   };
 
+  // Get unique teams from employees
+  const uniqueTeams = ['all', ...new Set(employees.map(emp => emp.team).filter(Boolean))];
+
+  // Filter employees based on selected team
+  const filteredEmployees = filterTeam === 'all' 
+    ? employees 
+    : employees.filter(emp => emp.team === filterTeam);
+
+  // Handle team change - reset employee filter when team changes
+  const handleTeamChange = (team) => {
+    setFilterTeam(team);
+    setFilterEmployee('all');
+  };
+
   const filteredLeaves = leaves.filter(leave => {
     // Filter by type
     const typeMatch = filterType === 'all' || leave.leave_type.toLowerCase() === filterType.toLowerCase();
@@ -143,12 +158,22 @@ export default function Leaves() {
             <option value="unplanned">Unplanned Only</option>
           </select>
           <select
+            value={filterTeam}
+            onChange={(e) => handleTeamChange(e.target.value)}
+            className="input w-48"
+          >
+            <option value="all">All Teams</option>
+            {uniqueTeams.filter(team => team !== 'all').map(team => (
+              <option key={team} value={team}>{team}</option>
+            ))}
+          </select>
+          <select
             value={filterEmployee}
             onChange={(e) => setFilterEmployee(e.target.value)}
             className="input w-64"
           >
             <option value="all">All Employees</option>
-            {employees.map(emp => (
+            {filteredEmployees.map(emp => (
               <option key={emp.id} value={emp.id}>{emp.name}</option>
             ))}
           </select>
