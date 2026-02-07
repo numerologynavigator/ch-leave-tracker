@@ -72,6 +72,16 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Validate that end date is not before start date
+    const startDateObj = parseISO(start_date);
+    const endDateObj = parseISO(end_date);
+    if (endDateObj < startDateObj) {
+      return res.status(400).json({ 
+        error: 'Invalid date range',
+        message: 'End date cannot be before start date'
+      });
+    }
+
     // Calculate days count based on leave type
     // Maternity and Paternity leave use business days (exclude weekends)
     // Regular PTO uses calendar days
@@ -109,6 +119,18 @@ router.put('/:id', async (req, res) => {
   try {
     const { start_date, end_date, leave_type, status, reason } = req.body;
     const { id } = req.params;
+
+    // Validate that end date is not before start date
+    if (start_date && end_date) {
+      const startDateObj = parseISO(start_date);
+      const endDateObj = parseISO(end_date);
+      if (endDateObj < startDateObj) {
+        return res.status(400).json({ 
+          error: 'Invalid date range',
+          message: 'End date cannot be before start date'
+        });
+      }
+    }
 
     let days_count;
     if (start_date && end_date && leave_type) {
