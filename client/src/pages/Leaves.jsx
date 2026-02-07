@@ -276,7 +276,7 @@ export default function Leaves() {
                   <option value="Paternity Leave">Paternity Leave (4 weeks)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Note: Maternity/Paternity leave counts business days only (excludes weekends)
+                  Note: All leave types exclude weekends (Saturday and Sunday)
                 </p>
               </div>
               <div>

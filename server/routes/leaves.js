@@ -1,6 +1,6 @@
 import express from 'express';
 import { dbAll, dbRun, dbGet } from '../database.js';
-import { differenceInDays, parseISO, format } from 'date-fns';
+import { parseISO, format } from 'date-fns';
 import { calculateBusinessDays } from '../utils/dateUtils.js';
 
 const router = express.Router();
@@ -147,14 +147,8 @@ router.post('/', async (req, res) => {
     }
 
     // Calculate days count based on leave type
-    // Maternity and Paternity leave use business days (exclude weekends)
-    // Regular PTO uses calendar days
-    let days_count;
-    if (leave_type === 'Maternity Leave' || leave_type === 'Paternity Leave') {
-      days_count = calculateBusinessDays(start_date, end_date);
-    } else {
-      days_count = differenceInDays(parseISO(end_date), parseISO(start_date)) + 1;
-    }
+    // All leave types now exclude weekends (Saturday and Sunday)
+    const days_count = calculateBusinessDays(start_date, end_date);
 
     const result = await dbRun(
       'INSERT INTO leaves (employee_id, start_date, end_date, days_count, leave_type, status, reason) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -223,13 +217,9 @@ router.put('/:id', async (req, res) => {
     }
 
     let days_count;
-    if (start_date && end_date && leave_type) {
-      // Recalculate days based on leave type
-      if (leave_type === 'Maternity Leave' || leave_type === 'Paternity Leave') {
-        days_count = calculateBusinessDays(start_date, end_date);
-      } else {
-        days_count = differenceInDays(parseISO(end_date), parseISO(start_date)) + 1;
-      }
+    if (start_date && end_date) {
+      // All leave types exclude weekends (Saturday and Sunday)
+      days_count = calculateBusinessDays(start_date, end_date);
     }
 
     await dbRun(
