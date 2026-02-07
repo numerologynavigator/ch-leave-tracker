@@ -62,6 +62,26 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
+    // Check for duplicate email
+    if (email) {
+      const existingByEmail = await dbGet('SELECT id, name FROM employees WHERE email = ?', [email]);
+      if (existingByEmail) {
+        return res.status(409).json({ 
+          error: 'Email already exists',
+          message: `Employee "${existingByEmail.name}" already has this email address`
+        });
+      }
+    }
+
+    // Check for duplicate name
+    const existingByName = await dbGet('SELECT id, email FROM employees WHERE name = ?', [name]);
+    if (existingByName) {
+      return res.status(409).json({ 
+        error: 'Name already exists',
+        message: `Employee "${name}" already exists`
+      });
+    }
+
     const result = await dbRun(
       'INSERT INTO employees (name, email, team, gender, total_pto_days) VALUES (?, ?, ?, ?, ?)',
       [name, email, team, gender, total_pto_days]
@@ -70,7 +90,7 @@ router.post('/', async (req, res) => {
     const employee = await dbGet('SELECT * FROM employees WHERE id = ?', [result.id]);
     res.status(201).json(employee);
   } catch (error) {
-    if (error.message.includes('UNIQUE constraint failed')) {
+    if (error.message && (error.message.includes('UNIQUE constraint') || error.message.includes('duplicate key'))) {
       return res.status(409).json({ error: 'Employee already exists' });
     }
     console.error('Error creating employee:', error);

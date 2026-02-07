@@ -77,7 +77,7 @@ async function initializePostgresDatabase() {
         CREATE TABLE IF NOT EXISTS employees (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
-          email TEXT,
+          email TEXT UNIQUE,
           team TEXT,
           gender TEXT,
           total_pto_days INTEGER DEFAULT 20,
