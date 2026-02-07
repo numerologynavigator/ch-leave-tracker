@@ -9,6 +9,7 @@ export default function Leaves() {
   const [showModal, setShowModal] = useState(false);
   const [editingLeave, setEditingLeave] = useState(null);
   const [filterType, setFilterType] = useState('all');
+  const [filterEmployee, setFilterEmployee] = useState('all');
   const [formData, setFormData] = useState({
     employee_id: '',
     start_date: '',
@@ -103,8 +104,13 @@ export default function Leaves() {
   };
 
   const filteredLeaves = leaves.filter(leave => {
-    if (filterType === 'all') return true;
-    return leave.leave_type.toLowerCase() === filterType.toLowerCase();
+    // Filter by type
+    const typeMatch = filterType === 'all' || leave.leave_type.toLowerCase() === filterType.toLowerCase();
+    
+    // Filter by employee
+    const employeeMatch = filterEmployee === 'all' || leave.employee_id.toString() === filterEmployee;
+    
+    return typeMatch && employeeMatch;
   });
 
   if (loading) {
@@ -125,7 +131,7 @@ export default function Leaves() {
       </div>
 
       <div className="card">
-        <div className="mb-4 flex items-center space-x-2">
+        <div className="mb-4 flex items-center space-x-3">
           <Filter className="h-5 w-5 text-gray-400" />
           <select
             value={filterType}
@@ -135,6 +141,16 @@ export default function Leaves() {
             <option value="all">All Types</option>
             <option value="planned">Planned Only</option>
             <option value="unplanned">Unplanned Only</option>
+          </select>
+          <select
+            value={filterEmployee}
+            onChange={(e) => setFilterEmployee(e.target.value)}
+            className="input w-64"
+          >
+            <option value="all">All Employees</option>
+            {employees.map(emp => (
+              <option key={emp.id} value={emp.id}>{emp.name}</option>
+            ))}
           </select>
         </div>
 
