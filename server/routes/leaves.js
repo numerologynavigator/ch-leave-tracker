@@ -5,6 +5,53 @@ import { calculateBusinessDays } from '../utils/dateUtils.js';
 
 const router = express.Router();
 
+// Debug endpoint to check leave types in database
+router.get('/debug/types', async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const { year = currentYear } = req.query;
+
+    // Get all unique leave types with counts
+    const leaveTypes = await dbAll(`
+      SELECT 
+        leave_type,
+        COUNT(*) as count,
+        SUM(days_count) as total_days
+      FROM leaves
+      WHERE strftime('%Y', start_date) = ?
+      AND status = 'Approved'
+      GROUP BY leave_type
+      ORDER BY count DESC
+    `, [year.toString()]);
+
+    // Get sample of each type
+    const samples = await dbAll(`
+      SELECT 
+        id,
+        employee_id,
+        leave_type,
+        start_date,
+        end_date,
+        days_count,
+        status
+      FROM leaves
+      WHERE strftime('%Y', start_date) = ?
+      ORDER BY leave_type, start_date
+      LIMIT 20
+    `, [year.toString()]);
+
+    res.json({
+      year: year.toString(),
+      leaveTypes,
+      samples,
+      note: 'This shows all leave_type values in the database with their counts'
+    });
+  } catch (error) {
+    console.error('Error in debug endpoint:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all leave records
 router.get('/', async (req, res) => {
   try {

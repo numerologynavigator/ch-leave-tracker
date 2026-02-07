@@ -97,7 +97,9 @@ export default function Dashboard() {
   const ptoBreakdownData = [
     { name: 'Planned', value: analytics.ptoBreakdown.planned?.totalDays || 0 },
     { name: 'Unplanned', value: analytics.ptoBreakdown.unplanned?.totalDays || 0 }
-  ];
+  ].filter(item => item.value > 0); // Only include categories with data
+
+  const hasPTOData = ptoBreakdownData.length > 0;
 
   // Get unique teams for filter
   const uniqueTeams = ['All Teams', ...new Set(analytics.teamEfficiency.map(emp => emp.team))];
@@ -177,25 +179,34 @@ export default function Dashboard() {
         {/* PTO Breakdown */}
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">PTO Type Distribution</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={ptoBreakdownData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {ptoBreakdownData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.name === 'Planned' ? COLORS.planned : COLORS.unplanned} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {hasPTOData ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={ptoBreakdownData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {ptoBreakdownData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.name === 'Planned' ? COLORS.planned : COLORS.unplanned} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-gray-400">
+              <div className="text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No PTO data for {selectedYear}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

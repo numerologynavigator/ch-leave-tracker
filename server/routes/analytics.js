@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
       FROM leaves
       WHERE strftime('%Y', start_date) = ?
       AND status = 'Approved'
-      AND leave_type IN ('Planned', 'Unplanned')
+      AND UPPER(leave_type) IN ('PLANNED', 'UNPLANNED')
     `, [year.toString()]);
 
     // Maternity and Paternity leave stats
@@ -54,28 +54,44 @@ router.get('/', async (req, res) => {
     // Planned vs Unplanned PTO (excluding maternity/paternity)
     const ptoBreakdown = await dbAll(`
       SELECT 
-        leave_type,
+        CASE 
+          WHEN UPPER(leave_type) = 'PLANNED' THEN 'Planned'
+          WHEN UPPER(leave_type) = 'UNPLANNED' THEN 'Unplanned'
+          ELSE leave_type
+        END as leave_type,
         COUNT(*) as count,
         SUM(days_count) as total_days
       FROM leaves
       WHERE strftime('%Y', start_date) = ?
       AND status = 'Approved'
-      AND leave_type IN ('Planned', 'Unplanned')
-      GROUP BY leave_type
+      AND UPPER(leave_type) IN ('PLANNED', 'UNPLANNED')
+      GROUP BY CASE 
+        WHEN UPPER(leave_type) = 'PLANNED' THEN 'Planned'
+        WHEN UPPER(leave_type) = 'UNPLANNED' THEN 'Unplanned'
+        ELSE leave_type
+      END
     `, [year.toString()]);
 
     // Monthly PTO trend (excluding maternity/paternity)
     const monthlyTrend = await dbAll(`
       SELECT 
         strftime('%m', start_date) as month,
-        leave_type,
+        CASE 
+          WHEN UPPER(leave_type) = 'PLANNED' THEN 'Planned'
+          WHEN UPPER(leave_type) = 'UNPLANNED' THEN 'Unplanned'
+          ELSE leave_type
+        END as leave_type,
         COUNT(*) as count,
         SUM(days_count) as total_days
       FROM leaves
       WHERE strftime('%Y', start_date) = ?
       AND status = 'Approved'
-      AND leave_type IN ('Planned', 'Unplanned')
-      GROUP BY month, leave_type
+      AND UPPER(leave_type) IN ('PLANNED', 'UNPLANNED')
+      GROUP BY month, CASE 
+        WHEN UPPER(leave_type) = 'PLANNED' THEN 'Planned'
+        WHEN UPPER(leave_type) = 'UNPLANNED' THEN 'Unplanned'
+        ELSE leave_type
+      END
       ORDER BY month
     `, [year.toString()]);
 
@@ -86,8 +102,8 @@ router.get('/', async (req, res) => {
         e.name,
         COUNT(l.id) as leave_count,
         SUM(l.days_count) as total_days,
-        SUM(CASE WHEN l.leave_type = 'Planned' THEN l.days_count ELSE 0 END) as planned_days,
-        SUM(CASE WHEN l.leave_type = 'Unplanned' THEN l.days_count ELSE 0 END) as unplanned_days
+        SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END) as planned_days,
+        SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END) as unplanned_days
       FROM employees e
       LEFT JOIN leaves l ON e.id = l.employee_id 
         AND strftime('%Y', l.start_date) = ?
@@ -104,16 +120,16 @@ router.get('/', async (req, res) => {
         e.name,
         COALESCE(e.team, 'No Team') as team,
         e.total_pto_days,
-        COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0) as pto_used,
-        (e.total_pto_days - COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0)) as pto_remaining,
-        COALESCE(SUM(CASE WHEN l.leave_type = 'Planned' THEN l.days_count ELSE 0 END), 0) as planned,
-        COALESCE(SUM(CASE WHEN l.leave_type = 'Unplanned' THEN l.days_count ELSE 0 END), 0) as unplanned,
+        COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0) as pto_used,
+        (e.total_pto_days - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0)) as pto_remaining,
+        COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END), 0) as planned,
+        COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0) as unplanned,
         CASE 
-          WHEN COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0) > 0 
-          THEN ROUND(COALESCE(SUM(CASE WHEN l.leave_type = 'Planned' THEN l.days_count ELSE 0 END), 0) * 100.0 / COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0), 1)
+          WHEN COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0) > 0 
+          THEN ROUND(COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END), 0) * 100.0 / COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0), 1)
           ELSE 0 
         END as planned_percentage,
-        ROUND(((e.total_pto_days - COALESCE(SUM(CASE WHEN l.leave_type = 'Unplanned' THEN l.days_count ELSE 0 END), 0)) * 100.0 / e.total_pto_days), 1) as work_efficiency
+        ROUND(((e.total_pto_days - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0)) * 100.0 / e.total_pto_days), 1) as work_efficiency
       FROM employees e
       LEFT JOIN leaves l ON e.id = l.employee_id 
         AND strftime('%Y', l.start_date) = ?
@@ -140,15 +156,15 @@ router.get('/', async (req, res) => {
         COALESCE(e.team, 'No Team') as team,
         COUNT(DISTINCT e.id) as employee_count,
         SUM(e.total_pto_days) as team_total_pto,
-        COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0) as total_pto_used,
-        COALESCE(SUM(CASE WHEN l.leave_type = 'Planned' THEN l.days_count ELSE 0 END), 0) as planned_days,
-        COALESCE(SUM(CASE WHEN l.leave_type = 'Unplanned' THEN l.days_count ELSE 0 END), 0) as unplanned_days,
+        COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0) as total_pto_used,
+        COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END), 0) as planned_days,
+        COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0) as unplanned_days,
         CASE 
-          WHEN COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0) > 0 
-          THEN ROUND(COALESCE(SUM(CASE WHEN l.leave_type = 'Planned' THEN l.days_count ELSE 0 END), 0) * 100.0 / COALESCE(SUM(CASE WHEN l.leave_type IN ('Planned', 'Unplanned') THEN l.days_count ELSE 0 END), 0), 1)
+          WHEN COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0) > 0 
+          THEN ROUND(COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END), 0) * 100.0 / COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0), 1)
           ELSE 0 
         END as planned_percentage,
-        ROUND(((SUM(e.total_pto_days) - COALESCE(SUM(CASE WHEN l.leave_type = 'Unplanned' THEN l.days_count ELSE 0 END), 0)) * 100.0 / SUM(e.total_pto_days)), 1) as work_efficiency
+        ROUND(((SUM(e.total_pto_days) - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0)) * 100.0 / SUM(e.total_pto_days)), 1) as work_efficiency
       FROM employees e
       LEFT JOIN leaves l ON e.id = l.employee_id 
         AND strftime('%Y', l.start_date) = ?
