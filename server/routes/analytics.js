@@ -129,7 +129,11 @@ router.get('/', async (req, res) => {
           THEN ROUND(COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END), 0) * 100.0 / COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0), 1)
           ELSE 0 
         END as planned_percentage,
-        ROUND(((e.total_pto_days - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0)) * 100.0 / e.total_pto_days), 1) as work_efficiency
+        CASE
+          WHEN e.total_pto_days > 0
+          THEN ROUND(((e.total_pto_days - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0)) * 100.0 / e.total_pto_days), 1)
+          ELSE 100
+        END as work_efficiency
       FROM employees e
       LEFT JOIN leaves l ON e.id = l.employee_id 
         AND strftime('%Y', l.start_date) = ?
@@ -164,7 +168,11 @@ router.get('/', async (req, res) => {
           THEN ROUND(COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'PLANNED' THEN l.days_count ELSE 0 END), 0) * 100.0 / COALESCE(SUM(CASE WHEN UPPER(l.leave_type) IN ('PLANNED', 'UNPLANNED') THEN l.days_count ELSE 0 END), 0), 1)
           ELSE 0 
         END as planned_percentage,
-        ROUND(((SUM(e.total_pto_days) - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0)) * 100.0 / SUM(e.total_pto_days)), 1) as work_efficiency
+        CASE
+          WHEN SUM(e.total_pto_days) > 0
+          THEN ROUND(((SUM(e.total_pto_days) - COALESCE(SUM(CASE WHEN UPPER(l.leave_type) = 'UNPLANNED' THEN l.days_count ELSE 0 END), 0)) * 100.0 / SUM(e.total_pto_days)), 1)
+          ELSE 100
+        END as work_efficiency
       FROM employees e
       LEFT JOIN leaves l ON e.id = l.employee_id 
         AND strftime('%Y', l.start_date) = ?

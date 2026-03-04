@@ -31,8 +31,14 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/email', emailRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  try {
+    const { dbGet } = await import('./database.js');
+    await dbGet('SELECT 1 as test');
+    res.json({ status: 'OK', database: 'connected', timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(503).json({ status: 'ERROR', database: 'disconnected', error: error.message, timestamp: new Date().toISOString() });
+  }
 });
 
 // Serve static files in production

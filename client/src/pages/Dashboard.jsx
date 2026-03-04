@@ -58,10 +58,22 @@ export default function Dashboard() {
   const fetchAnalytics = async () => {
     try {
       const response = await fetch(`/api/analytics?year=${selectedYear}`);
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
+        setAnalytics(null);
+        return;
+      }
       const data = await response.json();
-      setAnalytics(data);
+      // Validate the response has expected structure
+      if (data && data.summary && data.monthlyTrend) {
+        setAnalytics(data);
+      } else {
+        console.error('Invalid analytics data structure:', data);
+        setAnalytics(null);
+      }
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setAnalytics(null);
     } finally {
       setLoading(false);
     }
